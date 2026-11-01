@@ -23,3 +23,7 @@
 在 Repository **Settings → Pages → Build and deployment** 選擇 **Deploy from a branch**，Branch 選 **main**、資料夾選 **/(root)**，按 Save。預期網址為 https://cicilia880321-tech.github.io/2026-osaka-trip/ 。此網址需等待 Pages 實際部署完成才可使用。
 
 `.nojekyll` 讓 GitHub Pages 直接發佈靜態檔案。後續推送 main 將觸發部署；以 Pages 設定及部署狀態確認是否成功，不需要額外建置命令。
+
+## 行程載入保護
+
+HTML 內保留五天完整行程、預設費用與注意事項，JavaScript 未載入時仍可閱讀。腳本啟動後使用 `days` 重新渲染；修改行程時也需同步 HTML 預載內容。修改腳本或樣式後，更新 `index.html` 的資源版本參數，避免舊快取與新版結構混用。
