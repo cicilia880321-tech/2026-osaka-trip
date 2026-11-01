@@ -8,3 +8,32 @@
 
 /* Three-column expense split visible on each itinerary cost */
 .expense-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;font-variant-numeric:tabular-nums}.expense-column{min-width:0}.expense-column span{display:block;color:var(--muted);font-size:11px;font-weight:500;white-space:nowrap}.expense-column strong{display:block;font-size:clamp(12px,1.2vw,17px);line-height:1.5;white-space:nowrap}.expense-column:last-child strong{color:#a34434}.expense summary{min-width:0}.expense .converted{display:block;width:100%;margin:8px 0 5px}.expense .cost-meta{font-size:10px}.event:has(.cost-slot){grid-template-columns:80px minmax(0,1fr) minmax(330px,40%)}.stay:has(.cost-slot){grid-template-columns:minmax(0,1fr) minmax(330px,40%)}.stay .cost-slot{grid-column:2;grid-row:1/4}.budget-status{font-size:12px;color:var(--muted);width:100%;margin:0}.summary .stat{min-width:0}#budget .summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}#budget .summary .stat strong{font-size:clamp(17px,2vw,27px);white-space:nowrap}@media(max-width:800px){.event:has(.cost-slot){grid-template-columns:70px minmax(0,1fr)}.event .cost-slot{grid-column:2}.stay:has(.cost-slot){display:block}.stay .cost-slot{grid-column:auto}.expense-columns{gap:5px}.expense-column strong{font-size:clamp(12px,3vw,16px)}#budget .summary{gap:8px}}@media(max-width:550px){.expense-column span{font-size:10px}.expense-column strong{font-size:12px}#budget .summary .stat strong{font-size:15px}#budget .summary .stat span{font-size:11px}}
+
+/* 2026 maple editorial refresh: vermilion, amber, warm washi, sumi ink */
+:root{--paper:#faf7f0;--ink:#252b28;--green:#343e37;--red:#ad3f2d;--line:#e2d9c9;--muted:#746f66;--maple:#b63e2a;--amber:#d59a45;--washi:#fffdf8}
+body{background:var(--paper);color:var(--ink)}
+.hero{background:linear-gradient(115deg,rgba(30,35,30,.88),rgba(47,41,31,.58)),radial-gradient(ellipse at 85% 30%,#b64a2d 0%,#8b3c2c 23%,#c48a3e 43%,#3a4b39 70%);color:#fff8ed;min-height:300px;border-bottom:5px solid var(--maple)}
+.hero:before{content:"";position:absolute;right:6%;top:10%;width:240px;height:240px;opacity:.26;pointer-events:none;background:radial-gradient(ellipse at 50% 10%,#e8ad54 0 12%,transparent 13%),radial-gradient(ellipse at 78% 38%,#d74e2e 0 15%,transparent 16%),radial-gradient(ellipse at 18% 44%,#e8ad54 0 15%,transparent 16%),radial-gradient(ellipse at 62% 75%,#d74e2e 0 15%,transparent 16%),radial-gradient(ellipse at 29% 79%,#e8ad54 0 14%,transparent 15%);transform:rotate(-18deg)}
+.hero:after{border-color:#fff8ed33;box-shadow:0 0 0 40px #fff8ed08,0 0 0 80px #fff8ed04}
+.hero .eyebrow{color:#f0c38b}.hero h1 span{color:#f0b36e}.seal{border-color:#e7b174;color:#f1d09e}
+nav{background:#faf7f0f5;border-bottom-color:#dfd4c1;backdrop-filter:blur(12px)}
+nav a:hover{color:var(--maple)}.eyebrow,.day-number,.event time{color:var(--maple)}
+h1,h2,.day h3{font-family:"Noto Serif TC","Songti TC","PMingLiU",serif}
+h2{font-weight:650;letter-spacing:.04em}section{border-bottom-color:#e3dacb}
+.day{background:var(--washi);border-color:#dfd6c6;border-radius:12px;box-shadow:0 8px 24px #4e30200a}
+.day-head{background:linear-gradient(90deg,#f5e9d8,#f8f3e9 65%);border-bottom-color:#e8d8bf;border-left:5px solid var(--maple)}
+.day-number{font-weight:750}.day-head h3{color:#382f29}.timeline .event{border-bottom-color:#eee6db}
+.badge.confirmed{background:#e8eee6;color:#3b5842}.badge.pending{background:#fff0d7;color:#87511b}.badge.flexible{background:#f1eee7;color:#72685d}
+.stay{background:#f4f0e6}.day-note{background:#fff6e9;color:#8e4832}
+a{color:#82513c}.map:hover{color:var(--maple)}
+.stat strong{color:#3b4439}.expense-column:last-child strong,.daily tbody td:last-child{color:var(--maple)}
+.callout{border-left-color:var(--maple);background:#f9efe1}
+button.primary{background:var(--maple);border-color:var(--maple)}
+button.primary:hover{background:#963323}
+input:focus,select:focus,textarea:focus{border-color:var(--maple)}
+#notes details{border-top:1px solid #e2d8c9}#notes summary{padding:4px 0}#notes summary:hover{color:var(--maple)}#notes summary::marker{color:var(--maple)}
+#notes details:has(summary:first-letter){background:transparent}
+#notes details[open]{background:#fffaf1;padding-inline:12px;border-radius:6px}
+#notes details summary{font-weight:650}
+#notes details summary[data-critical="true"]{color:#a23829}
+@media(max-width:650px){.hero{min-height:270px}.hero:before{right:-40px;top:28px;width:180px;height:180px}.day{border-radius:9px}.day-head{border-left-width:4px}}
