@@ -17,7 +17,7 @@ const expenseDefaults = [
  ['市區交通',null,'交通','未分配','待填','全程市區交通總額待填','付款待確認'],
  ['其他景點門票',null,'門票','未分配','待填','避免重複計入已列門票','付款待確認'],
  ['私人浴池／其他',null,'其他','未分配','待填','費用與使用條件待核對','付款待確認']
-].map((a,i)=>({id:`e${i}`,name:a[0],amount:a[1],category:a[2],day:a[3],basis:a[4],source:a[5],payment:a[6],owner:i===4?'Cecilia':'共同',nativeCurrency:i===4?'TWD':'JPY'})).concat([{id:'e18',name:'Jack 來回機票',amount:9100,category:'機票',day:'未分配',basis:'估算金額',source:'Jack 口述約 NT$9,100，待收據確認',payment:'付款待確認',owner:'Jack',nativeCurrency:'TWD'},{id:'e19',name:'Cecilia 回程託運行李 20 kg',amount:4900,category:'行李',day:'12/2',basis:'已知金額',source:'本人提供：¥4,900，20 kg，回程 GK057',payment:'已付款',owner:'Cecilia',nativeCurrency:'JPY'}]);
+].map((a,i)=>({id:`e${i}`,name:a[0],amount:a[1],category:a[2],day:a[3],basis:a[4],source:a[5],payment:a[6],owner:i===4?'Cecilia':'共同',nativeCurrency:i===4?'TWD':'JPY'})).concat([{id:'e16',name:'Jack 來回機票',amount:9100,category:'機票',day:'未分配',basis:'估算金額',source:'Jack 口述約 NT$9,100，待收據確認',payment:'付款待確認',owner:'Jack',nativeCurrency:'TWD'},{id:'e17',name:'Cecilia 回程託運行李 20 kg',amount:4900,category:'行李',day:'12/2',basis:'已知金額',source:'本人提供：¥4,900，20 kg，回程 GK057',payment:'已付款',owner:'Cecilia',nativeCurrency:'JPY'}]);
 const KEY='osaka-autumn-2026-v1';
 const fresh=()=>({version:1,currency:'JPY',people:2,view:'合計',rate:0.22,expenses:structuredClone(expenseDefaults),items:['UNIQLO','SK-II 機場免稅','Clé de Peau Beauté 肌膚之鑰'].map((name,i)=>({id:`s${i}`,name,price:null,quantity:1,notes:'',bought:false}))});
 const $=s=>document.querySelector(s);
@@ -37,7 +37,7 @@ function validate(s){
 let state=fresh();
 let loadWarning='';
 function migrateOld(old){
- if(!old||old.version!==1||!Array.isArray(old.expenses)||old.expenses.length!==18)return old;
+ if(!old||old.version!==1||!Array.isArray(old.expenses)||old.expenses.length!==16)return old;
  const upgraded=fresh();
  upgraded.currency=old.currency;upgraded.people=old.people;upgraded.rate=old.rate;
  upgraded.items=old.items;
@@ -72,7 +72,7 @@ function renderBudgetTotals(){
 }
 function renderExpenses(){
  document.querySelectorAll('.cost-slot').forEach(slot=>{const e=state.expenses.find(e=>e.id===slot.dataset.expense);slot.innerHTML=`<details class="expense" data-id="${e.id}"><summary aria-label="編輯${esc(e.name)}費用"><span class="cost-name">${esc(e.name)}${['e4'].includes(e.id)?'（全程）':''}</span><strong class="converted"></strong><small class="cost-meta"></small></summary><div class="fields"><label>原始金額（${e.nativeCurrency}）<input aria-label="${esc(e.name)}雙人金額" data-key="amount" type="number" min="0" max="10000000000" step="0.01" placeholder="待填" value="${e.amount??''}"></label><label>歸屬${select(['共同','Cecilia','Jack'],e.owner,'data-key="owner"')}</label><label>原始幣別${select(['JPY','TWD'],e.nativeCurrency,'data-key="nativeCurrency"')}</label><label>金額依據${select(bases,e.basis,'data-key="basis"')}</label><label>類別<input data-key="category" maxlength="100" value="${esc(e.category)}"></label><label>分配日期${select(dayOptions,e.day,'data-key="day"')}</label><label>付款狀態${select(payments,e.payment,'data-key="payment"')}</label><label>金額來源／說明<input data-key="source" maxlength="1000" value="${esc(e.source)}"></label></div></details>`});
- $('#extra-expenses').innerHTML=state.expenses.filter(e=>['e18','e19'].includes(e.id)).map(e=>'<div class="cost-slot" data-expense="'+e.id+'"></div>').join('');
+ $('#extra-expenses').innerHTML=state.expenses.filter(e=>['e16','e17'].includes(e.id)).map(e=>'<div class="cost-slot" data-expense="'+e.id+'"></div>').join('');
  // Reuse the same expense editor markup for the two additional individual items.
  document.querySelectorAll('#extra-expenses .cost-slot').forEach(slot=>{
  const e=state.expenses.find(x=>x.id===slot.dataset.expense);
