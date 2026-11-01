@@ -9,7 +9,7 @@ const expenseDefaults = [
  ['叡山電車紅葉拼團',11000,'交通','11/29','已知金額','雙人拼團報價','付款待確認'],
  ['嵐山祐齋亭',6000,'門票','12/1','已知金額','訂位信載明雙人金額','付款待確認'],
  ['燒鳥吧台座位費',1000,'餐飲','11/28','已知金額','¥500／人，雙人 ¥1,000','未付款'],
- ['來回機票',null,'機票','未分配','待填','尚未取得確切付款金額','付款待確認'],
+ ['Cecilia 來回機票',9386,'機票','未分配','已知金額','Trip.com 電子收據：NT$9,386','已付款'],
  ['TUNE STAY KYOTO 三晚',null,'住宿','未分配','待填','11/29–12/2，雙人三晚總額待填','付款待確認'],
  ['瑠璃光院門票',null,'門票','11/29','待填','尚未取得確切付款金額','付款待確認'],
  ['嵯峨野小火車',null,'交通','12/1','待填','尚未取得確切付款金額','付款待確認'],
@@ -17,9 +17,9 @@ const expenseDefaults = [
  ['市區交通',null,'交通','未分配','待填','全程市區交通總額待填','付款待確認'],
  ['其他景點門票',null,'門票','未分配','待填','避免重複計入已列門票','付款待確認'],
  ['私人浴池／其他',null,'其他','未分配','待填','費用與使用條件待核對','付款待確認']
-].map((a,i)=>({id:`e${i}`,name:a[0],amount:a[1],category:a[2],day:a[3],basis:a[4],source:a[5],payment:a[6]}));
+].map((a,i)=>({id:`e${i}`,name:a[0],amount:a[1],category:a[2],day:a[3],basis:a[4],source:a[5],payment:a[6],owner:i===4?'Cecilia':'共同',nativeCurrency:i===4?'TWD':'JPY'})).concat([{id:'e18',name:'Jack 來回機票',amount:9100,category:'機票',day:'未分配',basis:'估算金額',source:'Jack 口述約 NT$9,100，待收據確認',payment:'付款待確認',owner:'Jack',nativeCurrency:'TWD'},{id:'e19',name:'Cecilia 回程託運行李 20 kg',amount:4900,category:'行李',day:'12/2',basis:'已知金額',source:'本人提供：¥4,900，20 kg，回程 GK057',payment:'已付款',owner:'Cecilia',nativeCurrency:'JPY'}]);
 const KEY='osaka-autumn-2026-v1';
-const fresh=()=>({version:1,currency:'JPY',people:2,rate:0.22,expenses:structuredClone(expenseDefaults),items:['UNIQLO','SK-II 機場免稅','Clé de Peau Beauté 肌膚之鑰'].map((name,i)=>({id:`s${i}`,name,price:null,quantity:1,notes:'',bought:false}))});
+const fresh=()=>({version:1,currency:'JPY',people:2,view:'合計',rate:0.22,expenses:structuredClone(expenseDefaults),items:['UNIQLO','SK-II 機場免稅','Clé de Peau Beauté 肌膚之鑰'].map((name,i)=>({id:`s${i}`,name,price:null,quantity:1,notes:'',bought:false}))});
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dayOptions=['11/28','11/29','11/30','12/1','12/2','未分配'];
@@ -29,16 +29,30 @@ function validAmount(n){return n===null||(typeof n==='number'&&Number.isFinite(n
 function validText(v,max=1000){return typeof v==='string'&&v.length<=max}
 function validate(s){
  if(!s||s.version!==1||!['JPY','TWD'].includes(s.currency)||![1,2].includes(s.people)||typeof s.rate!=='number'||!Number.isFinite(s.rate)||s.rate<=0||s.rate>100||!Array.isArray(s.expenses)||s.expenses.length!==expenseDefaults.length||!Array.isArray(s.items)||s.items.length>500)throw Error('備份格式或版本不正確。');
- if(s.expenses.some((e,i)=>!e||e.id!==`e${i}`||!validText(e.name,100)||!validText(e.category,100)||!validText(e.source)||!validAmount(e.amount)||!bases.includes(e.basis)||!payments.includes(e.payment)||!dayOptions.includes(e.day)||(e.basis==='待填'&&e.amount!==null)))throw Error('預算資料格式不正確。');
+ if(s.view!==undefined&&!['合計','Cecilia','Jack'].includes(s.view))throw Error('預算檢視方式不正確。');
+ if(s.expenses.some((e,i)=>!e||e.id!==`e${i}`||!validText(e.name,100)||!validText(e.category,100)||!validText(e.source)||!validAmount(e.amount)||!bases.includes(e.basis)||!payments.includes(e.payment)||!dayOptions.includes(e.day)||!['Cecilia','Jack','共同'].includes(e.owner)||!['JPY','TWD'].includes(e.nativeCurrency)||(e.basis==='待填'&&e.amount!==null)))throw Error('預算資料格式不正確。');
  if(s.items.some(i=>!i||!validText(i.id,100)||!validText(i.name,100)||!validText(i.notes)||!validAmount(i.price)||!Number.isInteger(i.quantity)||i.quantity<1||i.quantity>9999||typeof i.bought!=='boolean')||new Set(s.items.map(i=>i.id)).size!==s.items.length)throw Error('購物資料格式不正確。');
- return s;
+ s.view=s.view||'合計';return s;
 }
 let state=fresh();
 let loadWarning='';
-try{const saved=localStorage.getItem(KEY);if(saved)state=validate(JSON.parse(saved));}catch{loadWarning='無法讀取已儲存資料，現顯示預設內容；請檢查瀏覽器儲存設定或匯入備份。';}
+function migrateOld(old){
+ if(!old||old.version!==1||!Array.isArray(old.expenses)||old.expenses.length!==18)return old;
+ const upgraded=fresh();
+ upgraded.currency=old.currency;upgraded.people=old.people;upgraded.rate=old.rate;
+ upgraded.items=old.items;
+ old.expenses.forEach((e,i)=>{if(i!==4)upgraded.expenses[i]={...e,owner:'共同',nativeCurrency:'JPY'};});
+ return upgraded;
+}
+try{const saved=localStorage.getItem(KEY);if(saved)state=validate(migrateOld(JSON.parse(saved)));}catch{loadWarning='無法讀取已儲存資料，現顯示預設內容；請檢查瀏覽器儲存設定或匯入備份。';}
 function message(s){$('#message').textContent=s}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{message('儲存失敗，請立即匯出 JSON 備份，避免重新整理後遺失。');}}
-function money(n,perPerson=false){const value=n*(state.currency==='TWD'?state.rate:1)/(perPerson&&state.people===1?2:1);return new Intl.NumberFormat('zh-TW',{style:'currency',currency:state.currency,minimumFractionDigits:0,maximumFractionDigits:2}).format(value)}
+function formatMoney(n){return new Intl.NumberFormat('zh-TW',{style:'currency',currency:state.currency,minimumFractionDigits:0,maximumFractionDigits:2}).format(n)}
+function money(n,perPerson=false){return formatMoney(n*(state.currency==='TWD'?state.rate:1)/(perPerson&&state.people===1?2:1))}
+function inJPY(e){return e.amount===null?0:e.amount*(e.nativeCurrency==='TWD'?1/state.rate:1)}
+function allocation(e){const v=inJPY(e)*(state.currency==='TWD'?state.rate:1);return state.view==='合計'?v:e.owner==='共同'?v/2:e.owner===state.view?v:0}
+function budgetMoney(e){return formatMoney(allocation(e))}
+function sumBudget(rows,basis){return rows.filter(e=>e.amount!==null&&e.basis===basis).reduce((n,e)=>n+allocation(e),0)}
 function maps(q,label){return `<a class="map" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}" target="_blank" rel="noopener noreferrer">${esc(label||q)} ↗</a>`}
 // One persistent expense per slot. Shared trip costs are labelled explicitly.
 const costSlots={'0-0':'e4','0-3':'e0','0-10':'e3','1-4':'e6','1-12':'e1','1-stay':'e5','3-7':'e2','3-11':'e7'};
@@ -51,13 +65,19 @@ function select(options,value,attrs){return `<select ${attrs}>${options.map(o=>`
 function stat(label,value){return `<div class="stat"><span>${label}</span><strong>${value}</strong></div>`}
 function sumExpenses(list,basis){return list.filter(e=>e.amount!==null&&e.basis===basis).reduce((a,e)=>a+e.amount,0)}
 function renderBudgetTotals(){
- const known=sumExpenses(state.expenses,'已知金額'),estimate=sumExpenses(state.expenses,'估算金額');
- $('#budget-summary').innerHTML=stat('已知金額 · 非已付款',money(known,true))+stat('獨立估算',money(estimate,true))+stat('整趟已填合計',money(known+estimate,true));
- $('#daily').innerHTML=`<table><thead><tr><th scope="col">日期</th><th scope="col">已知</th><th scope="col">估算</th><th scope="col">小計</th></tr></thead><tbody>${dayOptions.map(d=>{const rows=state.expenses.filter(e=>e.day===d),known=sumExpenses(rows,'已知金額'),estimate=sumExpenses(rows,'估算金額');return `<tr><th scope="row">${d}<small>待填 ${rows.filter(e=>e.amount===null).length} 筆</small></th><td>${money(known,true)}</td><td>${money(estimate,true)}</td><td>${money(known+estimate,true)}</td></tr>`}).join('')}</tbody></table>`;
- document.querySelectorAll('.expense').forEach(el=>{const e=state.expenses.find(e=>e.id===el.dataset.id);el.querySelector('.converted').textContent=e.amount===null?'待填 ＋':money(e.amount,true);el.querySelector('.cost-meta').textContent=`${e.basis} · ${e.payment}`});
+ const known=sumBudget(state.expenses,'已知金額'),estimate=sumBudget(state.expenses,'估算金額');
+ $('#budget-summary').innerHTML=stat('已知金額 · 非已付款',formatMoney(known))+stat('獨立估算',formatMoney(estimate))+stat('整趟已填合計',formatMoney(known+estimate));
+ $('#daily').innerHTML=`<table><thead><tr><th scope="col">日期</th><th scope="col">已知</th><th scope="col">估算</th><th scope="col">小計</th></tr></thead><tbody>${dayOptions.map(d=>{const rows=state.expenses.filter(e=>e.day===d),known=sumBudget(rows,'已知金額'),estimate=sumBudget(rows,'估算金額');return `<tr><th scope="row">${d}<small>待填 ${rows.filter(e=>e.amount===null).length} 筆</small></th><td>${money(known,true)}</td><td>${money(estimate,true)}</td><td>${money(known+estimate,true)}</td></tr>`}).join('')}</tbody></table>`;
+ document.querySelectorAll('.expense').forEach(el=>{const e=state.expenses.find(e=>e.id===el.dataset.id);el.querySelector('.converted').textContent=e.amount===null?'待填 ＋':budgetMoney(e);el.querySelector('.cost-meta').textContent=`${e.owner} · ${e.basis} · ${e.payment}`});
 }
 function renderExpenses(){
- document.querySelectorAll('.cost-slot').forEach(slot=>{const e=state.expenses.find(e=>e.id===slot.dataset.expense);slot.innerHTML=`<details class="expense" data-id="${e.id}"><summary aria-label="編輯${esc(e.name)}費用"><span class="cost-name">${esc(e.name)}${['e4'].includes(e.id)?'（全程）':''}</span><strong class="converted"></strong><small class="cost-meta"></small></summary><div class="fields"><label>雙人金額（JPY）<input aria-label="${esc(e.name)}雙人金額" data-key="amount" type="number" min="0" max="10000000000" step="0.01" placeholder="待填" value="${e.amount??''}"></label><label>金額依據${select(bases,e.basis,'data-key="basis"')}</label><label>類別<input data-key="category" maxlength="100" value="${esc(e.category)}"></label><label>分配日期${select(dayOptions,e.day,'data-key="day"')}</label><label>付款狀態${select(payments,e.payment,'data-key="payment"')}</label><label>金額來源／說明<input data-key="source" maxlength="1000" value="${esc(e.source)}"></label></div></details>`});
+ document.querySelectorAll('.cost-slot').forEach(slot=>{const e=state.expenses.find(e=>e.id===slot.dataset.expense);slot.innerHTML=`<details class="expense" data-id="${e.id}"><summary aria-label="編輯${esc(e.name)}費用"><span class="cost-name">${esc(e.name)}${['e4'].includes(e.id)?'（全程）':''}</span><strong class="converted"></strong><small class="cost-meta"></small></summary><div class="fields"><label>原始金額（${e.nativeCurrency}）<input aria-label="${esc(e.name)}雙人金額" data-key="amount" type="number" min="0" max="10000000000" step="0.01" placeholder="待填" value="${e.amount??''}"></label><label>歸屬${select(['共同','Cecilia','Jack'],e.owner,'data-key="owner"')}</label><label>原始幣別${select(['JPY','TWD'],e.nativeCurrency,'data-key="nativeCurrency"')}</label><label>金額依據${select(bases,e.basis,'data-key="basis"')}</label><label>類別<input data-key="category" maxlength="100" value="${esc(e.category)}"></label><label>分配日期${select(dayOptions,e.day,'data-key="day"')}</label><label>付款狀態${select(payments,e.payment,'data-key="payment"')}</label><label>金額來源／說明<input data-key="source" maxlength="1000" value="${esc(e.source)}"></label></div></details>`});
+ $('#extra-expenses').innerHTML=state.expenses.filter(e=>['e18','e19'].includes(e.id)).map(e=>'<div class="cost-slot" data-expense="'+e.id+'"></div>').join('');
+ // Reuse the same expense editor markup for the two additional individual items.
+ document.querySelectorAll('#extra-expenses .cost-slot').forEach(slot=>{
+ const e=state.expenses.find(x=>x.id===slot.dataset.expense);
+ slot.innerHTML=`<details class="expense" data-id="${e.id}"><summary><span class="cost-name">${esc(e.name)}</span><strong class="converted"></strong><small class="cost-meta"></small></summary><div class="fields"><label>原始金額（${e.nativeCurrency}）<input data-key="amount" type="number" min="0" step="0.01" value="${e.amount??''}"></label><label>歸屬${select(['共同','Cecilia','Jack'],e.owner,'data-key="owner"')}</label><label>原始幣別${select(['JPY','TWD'],e.nativeCurrency,'data-key="nativeCurrency"')}</label><label>金額依據${select(bases,e.basis,'data-key="basis"')}</label><label>付款狀態${select(payments,e.payment,'data-key="payment"')}</label><label>金額來源／說明<input data-key="source" value="${esc(e.source)}"></label></div></details>`;
+ });
  renderBudgetTotals();
 }
 
@@ -71,18 +91,21 @@ function renderItems(){
  renderShoppingTotals();
 }
 
-function renderControls(){$('#currency').value=state.currency;$('#people').value=state.people;$('#rate').value=state.rate}
+function renderControls(){$('#currency').value=state.currency;$('#people').value=state.people;$('#owner-view').value=state.view||'合計';$('#rate').value=state.rate}
 function renderAll(){renderControls();renderExpenses();renderItems()}
 $('#currency').addEventListener('change',e=>{state.currency=e.target.value;save();renderBudgetTotals();renderShoppingTotals()});
 $('#people').addEventListener('change',e=>{state.people=Number(e.target.value);save();renderBudgetTotals()});
+$('#owner-view').addEventListener('change',e=>{state.view=e.target.value;save();renderBudgetTotals()});
 $('#rate').addEventListener('change',e=>{const n=Number(e.target.value);if(!Number.isFinite(n)||n<=0||n>100){e.target.value=state.rate;message('匯率須大於 0 且不超過 100。');return}state.rate=n;save();renderBudgetTotals();renderShoppingTotals()});
-$('#days').addEventListener('change',e=>{
+function expenseChanged(e){
  const key=e.target.dataset.key,card=e.target.closest('.expense');if(!key||!card)return;const row=state.expenses.find(r=>r.id===card.dataset.id);
  if(key==='amount') {const n=e.target.value===''?null:Number(e.target.value);if(!validAmount(n)){e.target.value=row.amount??'';message('請輸入有效的非負金額。');return}row.amount=n;if(n===null)row.basis='待填';else if(row.basis==='待填')row.basis='估算金額';card.querySelector('[data-key=basis]').value=row.basis;}
  else if(key==='basis'){row.basis=e.target.value;if(row.basis==='待填'){row.amount=null;card.querySelector('[data-key=amount]').value=''}else if(row.amount===null){row.basis='待填';e.target.value='待填';message('請先填入金額，再指定已知或估算依據。');}}
  else row[key]=e.target.value;
- save();renderBudgetTotals();
-});
+ save();renderExpenses();
+}
+$('#days').addEventListener('change',expenseChanged);
+$('#extra-expenses').addEventListener('change',expenseChanged);
 $('#add-item').addEventListener('click',()=>{if(state.items.length>=500){message('最多 500 項商品。');return}state.items.push({id:crypto.randomUUID(),name:'新商品',price:null,quantity:1,notes:'',bought:false});save();renderItems();$('#items .item:last-child [data-key=name]').focus()});
 $('#items').addEventListener('change',e=>{
  const key=e.target.dataset.key,card=e.target.closest('.item');if(!key||!card)return;const row=state.items.find(i=>i.id===card.dataset.id);
@@ -94,5 +117,5 @@ $('#items').addEventListener('change',e=>{
 });
 $('#items').addEventListener('click',e=>{if(!e.target.closest('.delete'))return;const card=e.target.closest('.item');state.items=state.items.filter(i=>i.id!==card.dataset.id);save();renderItems();$('#add-item').focus()});
 $('#export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='kyoto-osaka-2026-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);message('已匯出預算、購物清單與設定備份。')});
-$('#import').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2*1024*1024)throw Error('備份檔案不可超過 2 MB。');const incoming=validate(JSON.parse(await file.text()));if(!confirm('匯入會取代此瀏覽器的預算與購物清單。確定已備份並繼續？'))return;state=incoming;save();renderAll();message('已匯入備份。')}catch(err){message(`匯入失敗，原資料保留：${err.message}`)}finally{e.target.value=''}});
+$('#import').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2*1024*1024)throw Error('備份檔案不可超過 2 MB。');const incoming=validate(migrateOld(JSON.parse(await file.text())));if(!confirm('匯入會取代此瀏覽器的預算與購物清單。確定已備份並繼續？'))return;state=incoming;save();renderAll();message('已匯入備份。')}catch(err){message(`匯入失敗，原資料保留：${err.message}`)}finally{e.target.value=''}});
 renderDays();renderAll();if(loadWarning)message(loadWarning);
