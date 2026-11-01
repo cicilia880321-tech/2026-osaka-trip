@@ -17,7 +17,7 @@ const expenseDefaults = [
  ['市區交通',null,'交通','未分配','待填','全程市區交通總額待填','付款待確認'],
  ['其他景點門票',null,'門票','未分配','待填','避免重複計入已列門票','付款待確認'],
  ['私人浴池／其他',null,'其他','未分配','待填','費用與使用條件待核對','付款待確認']
-].map((a,i)=>({id:`e${i}`,name:a[0],amount:a[1],category:a[2],day:a[3],basis:a[4],source:a[5],payment:a[6],owner:i===4?'Cecilia':'共同',nativeCurrency:i===4?'TWD':'JPY'})).concat([{id:'e16',name:'Jack 來回機票',amount:9100,category:'機票',day:'未分配',basis:'估算金額',source:'Jack 口述約 NT$9,100，待收據確認',payment:'付款待確認',owner:'Jack',nativeCurrency:'TWD'},{id:'e17',name:'Cecilia 回程託運行李 20 kg',amount:4900,category:'行李',day:'12/2',basis:'已知金額',source:'本人提供：¥4,900，20 kg，回程 GK057',payment:'已付款',owner:'Cecilia',nativeCurrency:'JPY'}]);
+].map((a,i)=>({id:`e${i}`,name:a[0],amount:a[1],category:a[2],day:a[3],basis:a[4],source:a[5],payment:a[6],owner:i===4?'Cecilia':'共同',nativeCurrency:i===4?'TWD':'JPY'})).concat([{id:'e16',name:'Jack 來回機票',amount:9150,category:'機票',day:'未分配',basis:'估算金額',source:'Jack 提供機票金額 NT$9,150，待收據核對',payment:'付款待確認',owner:'Jack',nativeCurrency:'TWD'},{id:'e17',name:'Cecilia 回程託運行李 20 kg',amount:4900,category:'行李',day:'12/2',basis:'已知金額',source:'本人提供：¥4,900，20 kg，回程 GK057',payment:'已付款',owner:'Cecilia',nativeCurrency:'JPY'}]);
 const KEY='osaka-autumn-2026-v1';
 const fresh=()=>({version:1,currency:'JPY',people:2,view:'合計',rate:0.22,expenses:structuredClone(expenseDefaults),items:['UNIQLO','SK-II 機場免稅','Clé de Peau Beauté 肌膚之鑰'].map((name,i)=>({id:`s${i}`,name,price:null,quantity:1,notes:'',bought:false}))});
 const $=s=>document.querySelector(s);
