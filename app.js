@@ -10,7 +10,7 @@ const expenseDefaults = [
  ['嵐山祐齋亭',6000,'門票','12/1','已知金額','訂位信載明雙人金額','付款待確認'],
  ['燒鳥吧台座位費',1000,'餐飲','11/28','已知金額','¥500／人，雙人 ¥1,000','未付款'],
  ['Cecilia 來回機票',9386,'機票','未分配','已知金額','Trip.com 電子收據：NT$9,386','已付款'],
- ['TUNE STAY KYOTO 三晚',57777,'住宿','11/29','已知金額','Agoda 截圖：房價 ¥47,749＋稅費 ¥10,028＝¥57,777；11/25 延後扣款，換匯預估 ¥60,666（非額外費用）；城市住宿稅可能另收','延後扣款'],
+ ['TUNE STAY KYOTO 三晚',52072,'住宿','11/29','已知金額','Agoda 11/1 新訂單確認：¥48,099＋稅費 ¥10,099－優惠 ¥6,126＝¥52,072；舊訂單已免費取消；11/25 扣款，住宿稅可能另收','延後扣款'],
  ['瑠璃光院門票',null,'門票','11/29','待填','尚未取得確切付款金額','付款待確認'],
  ['嵯峨野小火車',null,'交通','12/1','待填','尚未取得確切付款金額','付款待確認'],
  ...['11/28','11/29','11/30','12/1','12/2'].map(d=>[`${d} 餐飲`,null,'餐飲',d,'待填','各餐廳實際消費待填','付款待確認']),
@@ -44,7 +44,7 @@ function migrateOld(old){
  old.expenses.forEach((e,i)=>{if(i!==4)upgraded.expenses[i]={...e,owner:'共同',nativeCurrency:'JPY'};});
  return upgraded;
 }
-try{const saved=localStorage.getItem(KEY);if(saved){state=validate(migrateOld(JSON.parse(saved)));const hotel=state.expenses.find(e=>e.id==='e5');if(hotel&&hotel.amount===null){Object.assign(hotel,structuredClone(expenseDefaults[5]));localStorage.setItem(KEY,JSON.stringify(state));}}}catch{loadWarning='無法讀取已儲存資料，現顯示預設內容；請檢查瀏覽器儲存設定或匯入備份。';}
+try{const saved=localStorage.getItem(KEY);if(saved){state=validate(migrateOld(JSON.parse(saved)));const hotel=state.expenses.find(e=>e.id==='e5');if(hotel&&(hotel.amount===null||hotel.amount===57777)){Object.assign(hotel,structuredClone(expenseDefaults[5]));localStorage.setItem(KEY,JSON.stringify(state));}}}catch{loadWarning='無法讀取已儲存資料，現顯示預設內容；請檢查瀏覽器儲存設定或匯入備份。';}
 function message(s){$('#message').textContent=s}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{message('儲存失敗，請立即匯出 JSON 備份，避免重新整理後遺失。');}}
 function formatMoney(n){return new Intl.NumberFormat('zh-TW',{style:'currency',currency:state.currency,minimumFractionDigits:0,maximumFractionDigits:2}).format(n)}
