@@ -62,43 +62,45 @@ function costSlot(key){return costSlots[key]?`<div class="cost-slot" data-expens
 
 // Curated photo subjects; freely licensed photographs are loaded from Wikimedia Commons.
 // Photos are illustrative and may show a different autumn season.
-const photoSubjects = [
-  [{q:'Dotonbori Osaka night',name:'大阪・道頓堀'},{q:'Namba Yasaka Shrine Osaka',name:'難波八阪神社'},{q:'Hozenji Yokocho Osaka',name:'法善寺橫丁'}],
-  [{q:'Rurikoin Kyoto autumn',name:'瑠璃光院'},{q:'Shimogamo Shrine autumn Kyoto',name:'下鴨神社'},{q:'Eizan railway autumn Kyoto',name:'叡山電車'}],
-  [{q:'Tofukuji Tsutenkyo autumn',name:'東福寺・通天橋'},{q:'Nanzenji Suirokaku autumn',name:'南禪寺・水路閣'},{q:'Eikando autumn Kyoto',name:'永觀堂'},{q:'Kiyomizudera autumn illumination',name:'清水寺夜楓'}],
-  [{q:'Jojakkoji autumn Kyoto',name:'常寂光寺'},{q:'Arashiyama bamboo forest Kyoto',name:'嵐山竹林'},{q:'Togetsukyo autumn Kyoto',name:'渡月橋'},{q:'Sagano scenic railway autumn',name:'嵯峨野小火車'}],
-  [{q:'Fushimi Inari torii Kyoto',name:'伏見稻荷大社'},{q:'Toji pagoda Kyoto',name:'東寺五重塔'},{q:'Kyoto Station building',name:'京都車站'}]
+// A fixed, landmark-specific Wikipedia article is used for each photograph.
+// No fuzzy image search: never show a photo of a different attraction.
+const landmarkPhotos=[
+ ['難波八阪神社','難波八阪神社'],['黑門市場','黒門市場'],['法善寺橫丁','法善寺横丁'],['心齋橋','心斎橋'],['道頓堀','道頓堀'],
+ ['琉璃光院','瑠璃光院'],['下鴨神社','下鴨神社'],['叡山電車','叡山電鉄'],
+ ['東福寺','東福寺'],['南禪寺','南禅寺'],['永觀堂','禅林寺 (京都市)'],['二年坂','産寧坂'],['清水寺','清水寺'],
+ ['常寂光寺','常寂光寺'],['竹林小徑','嵐山'],['野宮神社','野宮神社'],['渡月橋','渡月橋'],['祐齋亭','嵐山'],['嵯峨野觀光小火車','嵯峨野観光鉄道'],
+ ['伏見稻荷','伏見稲荷大社'],['東寺','東寺'],['京都車站','京都駅']
 ];
-function photoGallery(i){
- return '<div class="day-gallery" aria-label="當日景點照片">'+photoSubjects[i].map((p,j)=>
-   '<figure class="photo-tile"><div class="photo-placeholder" data-photo-day="'+i+'" data-photo-index="'+j+'"><span>京都・大阪 · 秋</span></div><figcaption>'+esc(p.name)+'</figcaption></figure>'
- ).join('')+'</div><p class="photo-disclaimer">景點參考照片 · 非即時楓況，照片來源 Wikimedia Commons（點選照片可查看作者及授權）</p>';
+function eventPhoto(e){
+ const name=e[1],entry=landmarkPhotos.find(x=>name.includes(x[0]));
+ if(!entry)return '';
+ return '<figure class="event-photo" data-wiki-title="'+encodeURIComponent(entry[1])+'"><figcaption>'+esc(entry[0])+' · 景點照片</figcaption></figure>';
 }
-async function loadGalleryPhotos(){
- const blocks=[...document.querySelectorAll('[data-photo-day]')];
- await Promise.all(blocks.map(async block=>{
-   const i=Number(block.dataset.photoDay),j=Number(block.dataset.photoIndex),p=photoSubjects[i]?.[j];
-   if(!p)return;
-   try{
-     const api=new URL('https://commons.wikimedia.org/w/api.php');
-     api.searchParams.set('action','query');api.searchParams.set('generator','search');
-     api.searchParams.set('gsrsearch','filetype:bitmap '+p.q);
-     api.searchParams.set('gsrnamespace','6');api.searchParams.set('gsrlimit','8');
-     api.searchParams.set('prop','imageinfo');api.searchParams.set('iiprop','url|mime');
-     api.searchParams.set('iiurlwidth','960');api.searchParams.set('format','json');api.searchParams.set('origin','*');
-     const response=await fetch(api.toString());if(!response.ok)return;
-     const json=await response.json();
-     const pages=Object.values(json.query?.pages||{}).filter(x=>x.imageinfo?.[0]?.thumburl && /image\/(jpeg|png|webp)/.test(x.imageinfo[0].mime||''));
-     const found=pages[0];if(!found)return;
-     const img=document.createElement('img');img.src=found.imageinfo[0].thumburl;img.alt=p.name+' 景點參考照片';img.loading='lazy';img.decoding='async';
-     const a=document.createElement('a');a.href=found.imageinfo[0].descriptionurl;a.target='_blank';a.rel='noopener noreferrer';a.className='photo-source';a.title=p.name+'｜照片作者與授權資訊';a.setAttribute('aria-label',p.name+' 照片來源與授權');a.appendChild(img);
-     block.replaceChildren(a);
-   }catch(_){/* Keep a graceful text fallback when external photos are unavailable. */}
- }));
+async function loadLandmarkPhotos(){
+ const blocks=[...document.querySelectorAll('[data-wiki-title]')];
+ const titles=[...new Set(blocks.map(b=>decodeURIComponent(b.dataset.wikiTitle)))];
+ try{
+  const url=new URL('https://ja.wikipedia.org/w/api.php');
+  url.searchParams.set('action','query');url.searchParams.set('prop','pageimages|info');
+  url.searchParams.set('inprop','url');url.searchParams.set('piprop','thumbnail');
+  url.searchParams.set('pithumbsize','700');url.searchParams.set('titles',titles.join('|'));
+  url.searchParams.set('format','json');url.searchParams.set('origin','*');
+  const response=await fetch(url.toString());if(!response.ok)return;
+  const data=await response.json();
+  const pages=Object.values(data.query?.pages||{});
+  for(const block of blocks){
+   const title=decodeURIComponent(block.dataset.wikiTitle);
+   const page=pages.find(p=>p.title===title||data.query?.normalized?.some(n=>n.from===title&&n.to===p.title));
+   if(!page?.thumbnail?.source||!page?.fullurl){block.remove();continue;}
+   const img=document.createElement('img');img.src=page.thumbnail.source;img.alt=block.querySelector('figcaption').textContent;
+   img.loading='lazy';img.decoding='async';
+   const link=document.createElement('a');link.href=page.fullurl;link.target='_blank';link.rel='noopener noreferrer';link.title='查看景點照片來源';link.appendChild(img);
+   block.prepend(link);
+  }
+ }catch(_){blocks.forEach(b=>b.remove());}
 }
-
 function renderDays(){
- $('#days').innerHTML=days.map((d,i)=>`<article class="day"><header class="day-head"><span class="day-number">DAY 0${i+1}</span><div><h3>${d.date}（${d.weekday}）${d.city}</h3><p>${d.theme}</p></div></header>${photoGallery(i)}<div class="timeline">${d.events.map((e,j)=>`<div class="event"><time>${esc(e[0])}</time><div><div class="event-title"><strong>${esc(e[1])}</strong><span class="badge ${statusClasses[e[2]]}">${statusNames[e[2]]}</span></div><p>${esc(e[3])}</p>${e[4]?(Array.isArray(e[4])?e[4]:[e[4]]).map(q=>maps(q)).join('　'):''}</div>${costSlot(`${i}-${j}`)}</div>`).join('')}</div>${d.stay?`<div class="stay">住宿 · ${d.stay} <span class="badge confirmed">已確認</span> ${maps(d.hotel,'飯店導航')}${costSlot(`${i}-stay`)}</div>`:''}${d.note?`<div class="day-note">${esc(d.note)}</div>`:''}</article>`).join('');
+ $('#days').innerHTML=days.map((d,i)=>`<article class="day"><header class="day-head"><span class="day-number">DAY 0${i+1}</span><div><h3>${d.date}（${d.weekday}）${d.city}</h3><p>${d.theme}</p></div></header><div class="timeline">${d.events.map((e,j)=>`<div class="event"><time>${esc(e[0])}</time><div><div class="event-title"><strong>${esc(e[1])}</strong><span class="badge ${statusClasses[e[2]]}">${statusNames[e[2]]}</span></div><p>${esc(e[3])}</p>${e[4]?(Array.isArray(e[4])?e[4]:[e[4]]).map(q=>maps(q)).join('　'):''}</div>${eventPhoto(e)}${costSlot(`${i}-${j}`)}</div>`).join('')}</div>${d.stay?`<div class="stay">住宿 · ${d.stay} <span class="badge confirmed">已確認</span> ${maps(d.hotel,'飯店導航')}${costSlot(`${i}-stay`)}</div>`:''}${d.note?`<div class="day-note">${esc(d.note)}</div>`:''}</article>`).join('');
  $('#note-list').innerHTML=notes.map(n=>`<details><summary>${esc(n[0])}</summary><p>${esc(n[1])}</p></details>`).join('');
 }
 function select(options,value,attrs){return `<select ${attrs}>${options.map(o=>`<option${o===value?' selected':''}>${esc(o)}</option>`).join('')}</select>`}
@@ -159,4 +161,4 @@ $('#items').addEventListener('change',e=>{
 $('#items').addEventListener('click',e=>{if(!e.target.closest('.delete'))return;const card=e.target.closest('.item');state.items=state.items.filter(i=>i.id!==card.dataset.id);save();renderItems();$('#add-item').focus()});
 $('#export').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='kyoto-osaka-2026-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);message('已匯出預算、購物清單與設定備份。')});
 $('#import').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2*1024*1024)throw Error('備份檔案不可超過 2 MB。');const incoming=validate(migrateOld(JSON.parse(await file.text())));if(!confirm('匯入會取代此瀏覽器的預算與購物清單。確定已備份並繼續？'))return;state=incoming;save();renderAll();message('已匯入備份。')}catch(err){message(`匯入失敗，原資料保留：${err.message}`)}finally{e.target.value=''}});
-renderDays();loadGalleryPhotos();renderAll();if(loadWarning)message(loadWarning);
+renderDays();loadLandmarkPhotos();renderAll();if(loadWarning)message(loadWarning);
