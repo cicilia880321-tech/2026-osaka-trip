@@ -9,7 +9,7 @@ const expenseDefaults = [
  ['叡山電車紅葉拼團',11000,'交通','11/29','已知金額','雙人拼團報價','付款待確認'],
  ['嵐山祐齋亭',6000,'門票','12/1','已知金額','訂位信載明雙人金額','付款待確認'],
  ['燒鳥吧台座位費',1000,'餐飲','11/28','已知金額','¥500／人，雙人 ¥1,000','未付款'],
- ['Cecilia 來回機票',9386,'機票','未分配','已知金額','Trip.com 電子收據：NT$9,386','已付款'],
+ ['Cecilia 機票＋回程託運行李',9386,'機票','未分配','已知金額','Trip.com 電子收據：NT$9,386','已付款'],
  ['TUNE STAY KYOTO 三晚',52072,'住宿','11/29','已知金額','Agoda 11/1 新訂單確認：¥48,099＋稅費 ¥10,099－優惠 ¥6,126＝¥52,072；舊訂單已免費取消；11/25 扣款，住宿稅可能另收','延後扣款'],
  ['瑠璃光院門票',null,'門票','11/29','待填','尚未取得確切付款金額','付款待確認'],
  ['嵯峨野小火車',null,'交通','12/1','待填','尚未取得確切付款金額','付款待確認'],
@@ -17,7 +17,7 @@ const expenseDefaults = [
  ['市區交通',null,'交通','未分配','待填','全程市區交通總額待填','付款待確認'],
  ['其他景點門票',null,'門票','未分配','待填','避免重複計入已列門票','付款待確認'],
  ['私人浴池／其他',null,'其他','未分配','待填','費用與使用條件待核對','付款待確認']
-].map((a,i)=>({id:`e${i}`,name:a[0],amount:a[1],category:a[2],day:a[3],basis:a[4],source:a[5],payment:a[6],owner:i===4?'Cecilia':'共同',nativeCurrency:i===4?'TWD':'JPY'})).concat([{id:'e16',name:'Jack 來回機票',amount:9150,category:'機票',day:'未分配',basis:'估算金額',source:'Jack 提供機票金額 NT$9,150，待收據核對',payment:'付款待確認',owner:'Jack',nativeCurrency:'TWD'},{id:'e17',name:'Cecilia 回程託運行李 20 kg',amount:4900,category:'行李',day:'12/2',basis:'已知金額',source:'本人提供：¥4,900，20 kg，回程 GK057',payment:'已付款',owner:'Cecilia',nativeCurrency:'JPY'}]);
+].map((a,i)=>({id:`e${i}`,name:a[0],amount:a[1],category:a[2],day:a[3],basis:a[4],source:a[5],payment:a[6],owner:i===4?'Cecilia':'共同',nativeCurrency:i===4?'TWD':'JPY'})).concat([{id:'e16',name:'Jack 來回機票',amount:9100,category:'機票',day:'未分配',basis:'估算金額',source:'Jack 提供機票金額 NT$9,100，待收據核對',payment:'付款待確認',owner:'Jack',nativeCurrency:'TWD'},{id:'e17',name:'Cecilia 回程託運行李 20 kg',amount:4900,category:'行李',day:'12/2',basis:'已知金額',source:'本人提供：¥4,900，20 kg，回程 GK057',payment:'已付款',owner:'Cecilia',nativeCurrency:'JPY'}]);
 const KEY='osaka-autumn-2026-v1';
 const fresh=()=>({version:1,currency:'JPY',people:2,view:'合計',rate:0.22,expenses:structuredClone(expenseDefaults),items:['UNIQLO','SK-II 機場免稅','Clé de Peau Beauté 肌膚之鑰'].map((name,i)=>({id:`s${i}`,name,price:null,quantity:1,notes:'',bought:false}))});
 const $=s=>document.querySelector(s);
@@ -44,7 +44,7 @@ function migrateOld(old){
  old.expenses.forEach((e,i)=>{if(i!==4)upgraded.expenses[i]={...e,owner:'共同',nativeCurrency:'JPY'};});
  return upgraded;
 }
-try{const saved=localStorage.getItem(KEY);if(saved){state=validate(migrateOld(JSON.parse(saved)));const hotel=state.expenses.find(e=>e.id==='e5');if(hotel&&(hotel.amount===null||hotel.amount===57777)){Object.assign(hotel,structuredClone(expenseDefaults[5]));}const osaka=state.expenses.find(e=>e.id==='e0');if(osaka&&(osaka.amount===null||osaka.amount===40153)){Object.assign(osaka,structuredClone(expenseDefaults[0]));}localStorage.setItem(KEY,JSON.stringify(state));}}catch{loadWarning='無法讀取已儲存資料，現顯示預設內容；請檢查瀏覽器儲存設定或匯入備份。';}
+try{const saved=localStorage.getItem(KEY);if(saved){state=validate(migrateOld(JSON.parse(saved)));const hotel=state.expenses.find(e=>e.id==='e5');if(hotel&&(hotel.amount===null||hotel.amount===57777)){Object.assign(hotel,structuredClone(expenseDefaults[5]));}const jack=state.expenses.find(e=>e.id==='e16');if(jack&&jack.amount===9150&&jack.basis==='估算金額')jack.amount=9100;const cecilia=state.expenses.find(e=>e.id==='e4');if(cecilia&&cecilia.name==='Cecilia 來回機票')cecilia.name='Cecilia 機票＋回程託運行李';const osaka=state.expenses.find(e=>e.id==='e0');if(osaka&&(osaka.amount===null||osaka.amount===40153)){Object.assign(osaka,structuredClone(expenseDefaults[0]));}localStorage.setItem(KEY,JSON.stringify(state));}}catch{loadWarning='無法讀取已儲存資料，現顯示預設內容；請檢查瀏覽器儲存設定或匯入備份。';}
 function message(s){$('#message').textContent=s}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{message('儲存失敗，請立即匯出 JSON 備份，避免重新整理後遺失。');}}
 function formatMoney(n){return new Intl.NumberFormat('zh-TW',{style:'currency',currency:state.currency,minimumFractionDigits:0,maximumFractionDigits:2}).format(n)}
@@ -52,12 +52,12 @@ function money(n,perPerson=false){return formatMoney(n*(state.currency==='TWD'?s
 function inJPY(e){return e.amount===null?0:e.amount*(e.nativeCurrency==='TWD'?1/state.rate:1)}
 function allocatedTo(e,person){const v=inJPY(e)*(state.currency==='TWD'?state.rate:1);return person==='合計'?v:e.owner==='共同'?v/2:e.owner===person?v:0}
 function allocation(e){return allocatedTo(e,state.view)}
-function expenseColumns(e){return `<div class="expense-columns">${['Cecilia','Jack','合計'].map(person=>`<div class="expense-column"><span>${person==='合計'?'兩人合計':person}</span><strong>${e.amount===null?'待填':formatMoney(allocatedTo(e,person))}</strong></div>`).join('')}</div>`}
+function expenseColumns(e){const amount=person=>allocatedTo(e,person)+(e.id==='e4'?allocatedTo(state.expenses.find(x=>x.id==='e17'),person):0);return `<div class="expense-columns">${['Cecilia','Jack','合計'].map(person=>`<div class="expense-column"><span>${person==='合計'?'兩人合計':person}</span><strong>${e.amount===null?'待填':formatMoney(amount(person))}</strong></div>`).join('')}</div>`}
 function budgetMoney(e){return formatMoney(allocation(e))}
 function sumBudget(rows,basis){return rows.filter(e=>e.amount!==null&&e.basis===basis).reduce((n,e)=>n+allocation(e),0)}
 function maps(q,label){return `<a class="map" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}" target="_blank" rel="noopener noreferrer">${esc(label||q)} ↗</a>`}
 // One persistent expense per slot. Shared trip costs are labelled explicitly.
-const costSlots={'0-0':'e4','0-3':'e0','0-10':'e3','1-4':'e6','1-12':'e1','1-stay':'e5','3-7':'e2','3-11':'e7'};
+const costSlots={'0-3':'e0','0-10':'e3','1-4':'e6','1-12':'e1','1-stay':'e5','3-7':'e2','3-11':'e7'};
 function costSlot(key){return costSlots[key]?`<div class="cost-slot" data-expense="${costSlots[key]}"></div>`:''}
 function renderDays(){
  $('#days').innerHTML=days.map((d,i)=>`<article class="day"><header class="day-head"><span class="day-number">DAY 0${i+1}</span><div><h3>${d.date}（${d.weekday}）${d.city}</h3><p>${d.theme}</p></div></header><div class="timeline">${d.events.map((e,j)=>`<div class="event"><time>${esc(e[0])}</time><div><div class="event-title"><strong>${esc(e[1])}</strong><span class="badge ${statusClasses[e[2]]}">${statusNames[e[2]]}</span></div><p>${esc(e[3])}</p>${e[4]?(Array.isArray(e[4])?e[4]:[e[4]]).map(q=>maps(q)).join('　'):''}</div>${costSlot(`${i}-${j}`)}</div>`).join('')}</div>${d.stay?`<div class="stay">住宿 · ${d.stay} <span class="badge confirmed">已確認</span> ${maps(d.hotel,'飯店導航')}${costSlot(`${i}-stay`)}</div>`:''}${d.note?`<div class="day-note">${esc(d.note)}</div>`:''}</article>`).join('');
@@ -74,11 +74,11 @@ function renderBudgetTotals(){
 }
 function renderExpenses(){
  document.querySelectorAll('.cost-slot').forEach(slot=>{const e=state.expenses.find(e=>e.id===slot.dataset.expense);slot.innerHTML=`<details class="expense" data-id="${e.id}"><summary aria-label="編輯${esc(e.name)}費用"><span class="cost-name">${esc(e.name)}${['e4'].includes(e.id)?'（全程）':''}</span><div class="converted"></div><small class="cost-meta"></small></summary><div class="fields"><label>原始金額（${e.nativeCurrency}）<input aria-label="${esc(e.name)}雙人金額" data-key="amount" type="number" min="0" max="10000000000" step="0.01" placeholder="待填" value="${e.amount??''}"></label><label>歸屬${select(['共同','Cecilia','Jack'],e.owner,'data-key="owner"')}</label><label>原始幣別${select(['JPY','TWD'],e.nativeCurrency,'data-key="nativeCurrency"')}</label><label>金額依據${select(bases,e.basis,'data-key="basis"')}</label><label>類別<input data-key="category" maxlength="100" value="${esc(e.category)}"></label><label>分配日期${select(dayOptions,e.day,'data-key="day"')}</label><label>付款狀態${select(payments,e.payment,'data-key="payment"')}</label><label>金額來源／說明<input data-key="source" maxlength="1000" value="${esc(e.source)}"></label></div></details>`});
- $('#extra-expenses').innerHTML=state.expenses.filter(e=>['e16','e17'].includes(e.id)).map(e=>'<div class="cost-slot" data-expense="'+e.id+'"></div>').join('');
+ $('#extra-expenses').innerHTML=state.expenses.filter(e=>['e4','e16'].includes(e.id)).map(e=>'<div class="cost-slot" data-expense="'+e.id+'"></div>').join('');
  // Reuse the same expense editor markup for the two additional individual items.
  document.querySelectorAll('#extra-expenses .cost-slot').forEach(slot=>{
  const e=state.expenses.find(x=>x.id===slot.dataset.expense);
- slot.innerHTML=`<details class="expense" data-id="${e.id}"><summary><span class="cost-name">${esc(e.name)}</span><strong class="converted"></strong><small class="cost-meta"></small></summary><div class="fields"><label>原始金額（${e.nativeCurrency}）<input data-key="amount" type="number" min="0" step="0.01" value="${e.amount??''}"></label><label>歸屬${select(['共同','Cecilia','Jack'],e.owner,'data-key="owner"')}</label><label>原始幣別${select(['JPY','TWD'],e.nativeCurrency,'data-key="nativeCurrency"')}</label><label>金額依據${select(bases,e.basis,'data-key="basis"')}</label><label>付款狀態${select(payments,e.payment,'data-key="payment"')}</label><label>金額來源／說明<input data-key="source" value="${esc(e.source)}"></label></div></details>`;
+ slot.innerHTML=`<details class="expense" data-id="${e.id}"><summary><span class="cost-name">${esc(e.name)}</span><div class="converted"></div><small class="cost-meta"></small></summary><div class="fields"><label>${e.id==='e4'?'來回機票（TWD）':`原始金額（${e.nativeCurrency}）`}<input data-key="amount" type="number" min="0" step="0.01" value="${e.amount??''}"></label>${e.id==='e4'?`<label>回程託運 20 kg（JPY）<input data-key="baggageAmount" type="number" min="0" step="0.01" value="${state.expenses.find(x=>x.id==='e17').amount??''}"></label>`:''}<label>歸屬${select(['共同','Cecilia','Jack'],e.owner,'data-key="owner"')}</label><label>原始幣別${select(['JPY','TWD'],e.nativeCurrency,'data-key="nativeCurrency"')}</label><label>金額依據${select(bases,e.basis,'data-key="basis"')}</label><label>付款狀態${select(payments,e.payment,'data-key="payment"')}</label><label>金額來源／說明<input data-key="source" value="${esc(e.source)}"></label></div></details>`;
  });
  renderBudgetTotals();
 }
@@ -101,7 +101,8 @@ $('#owner-view').addEventListener('change',e=>{state.view=e.target.value;save();
 $('#rate').addEventListener('change',e=>{const n=Number(e.target.value);if(!Number.isFinite(n)||n<=0||n>100){e.target.value=state.rate;message('匯率須大於 0 且不超過 100。');return}state.rate=n;save();renderBudgetTotals();renderShoppingTotals()});
 function expenseChanged(e){
  const key=e.target.dataset.key,card=e.target.closest('.expense');if(!key||!card)return;const row=state.expenses.find(r=>r.id===card.dataset.id);
- if(key==='amount') {const n=e.target.value===''?null:Number(e.target.value);if(!validAmount(n)){e.target.value=row.amount??'';message('請輸入有效的非負金額。');return}row.amount=n;if(n===null)row.basis='待填';else if(row.basis==='待填')row.basis='估算金額';card.querySelector('[data-key=basis]').value=row.basis;}
+ if(key==='baggageAmount'){const baggage=state.expenses.find(x=>x.id==='e17');const n=e.target.value===''?null:Number(e.target.value);if(!validAmount(n)){message('請輸入有效的行李金額。');return}baggage.amount=n;baggage.basis=n===null?'待填':'已知金額';save();renderExpenses();return;}
+  if(key==='amount') {const n=e.target.value===''?null:Number(e.target.value);if(!validAmount(n)){e.target.value=row.amount??'';message('請輸入有效的非負金額。');return}row.amount=n;if(n===null)row.basis='待填';else if(row.basis==='待填')row.basis='估算金額';card.querySelector('[data-key=basis]').value=row.basis;}
  else if(key==='basis'){row.basis=e.target.value;if(row.basis==='待填'){row.amount=null;card.querySelector('[data-key=amount]').value=''}else if(row.amount===null){row.basis='待填';e.target.value='待填';message('請先填入金額，再指定已知或估算依據。');}}
  else row[key]=e.target.value;
  save();renderExpenses();
