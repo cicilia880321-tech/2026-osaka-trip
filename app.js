@@ -64,40 +64,60 @@ function costSlot(key){return costSlots[key]?`<div class="cost-slot" data-expens
 // Photos are illustrative and may show a different autumn season.
 // A fixed, landmark-specific Wikipedia article is used for each photograph.
 // No fuzzy image search: never show a photo of a different attraction.
-const landmarkPhotos=[
- ['難波八阪神社','難波八阪神社'],['黑門市場','黒門市場'],['法善寺橫丁','法善寺横丁'],['心齋橋','心斎橋'],['道頓堀','道頓堀'],
- ['琉璃光院','瑠璃光院'],['下鴨神社','下鴨神社'],['叡山電車','叡山電鉄'],
- ['東福寺','東福寺'],['南禪寺','南禅寺'],['永觀堂','禅林寺 (京都市)'],['二年坂','産寧坂'],['清水寺','清水寺'],
- ['常寂光寺','常寂光寺'],['竹林小徑','嵐山'],['野宮神社','野宮神社'],['渡月橋','渡月橋'],['祐齋亭','嵐山'],['嵯峨野觀光小火車','嵯峨野観光鉄道'],
- ['伏見稻荷','伏見稲荷大社'],['東寺','東寺'],['京都車站','京都駅']
+// Autumn-first, location-specific images. Fixed Commons filenames are preferred.
+// Never fall back to green-season Wikipedia thumbnails or unrelated places.
+const autumnPhotos=[
+ ['琉璃光院','Rurikoin-autumn-reflection-2019-Luka-Peternel.jpg'],
+ ['東福寺','Tofukuji-bridge-autumn-2017-Luka-Peternel.jpg'],
+ ['清水寺','Kiyomizu-dera autumn'],
+ ['常寂光寺','Jojakkoji autumn leaves'],
+ ['永觀堂','Eikando autumn foliage'],
+ ['南禪寺','Nanzenji aqueduct autumn'],
+ ['下鴨神社','Shimogamo Shrine autumn leaves'],
+ ['叡山電車','Eizan railway maple tunnel autumn'],
+ ['祐齋亭','Yusai-tei Arashiyama autumn'],
+ ['渡月橋','Togetsukyo0270.jpg'],
+ ['伏見稻荷','Fushimi Inari autumn leaves'],
+ ['東寺','To-ji and Kitano Tenmangu, Kyoto - Toji7797.jpg'],
+ ['野宮神社','Nonomiya Shrine autumn'],
+ ['竹林小徑','Arashiyama autumn bamboo'],
+ ['二年坂','Sannenzaka autumn Kyoto'],
+ ['難波八阪神社','Namba Yasaka shrine autumn'],
+ ['法善寺橫丁','Hozenji Yokocho autumn'],
+ ['心齋橋','Shinsaibashi autumn Osaka'],
+ ['黑門市場','Kuromon market Osaka autumn']
 ];
 function eventPhoto(e){
- const name=e[1],entry=landmarkPhotos.find(x=>name.includes(x[0]));
+ const entry=autumnPhotos.find(x=>e[1].includes(x[0]));
  if(!entry)return '';
- return '<figure class="event-photo" data-wiki-title="'+encodeURIComponent(entry[1])+'"><figcaption>'+esc(entry[0])+' · 景點照片</figcaption></figure>';
+ return '<figure class="event-photo" data-autumn="'+encodeURIComponent(entry[1])+'" data-label="'+esc(entry[0])+'"><figcaption>'+esc(entry[0])+' · 秋季景點參考照</figcaption></figure>';
 }
 async function loadLandmarkPhotos(){
- const blocks=[...document.querySelectorAll('[data-wiki-title]')];
- const titles=[...new Set(blocks.map(b=>decodeURIComponent(b.dataset.wikiTitle)))];
- try{
-  const url=new URL('https://ja.wikipedia.org/w/api.php');
-  url.searchParams.set('action','query');url.searchParams.set('prop','pageimages|info');
-  url.searchParams.set('inprop','url');url.searchParams.set('piprop','thumbnail');
-  url.searchParams.set('pithumbsize','700');url.searchParams.set('titles',titles.join('|'));
-  url.searchParams.set('format','json');url.searchParams.set('origin','*');
-  const response=await fetch(url.toString());if(!response.ok)return;
-  const data=await response.json();
-  const pages=Object.values(data.query?.pages||{});
-  for(const block of blocks){
-   const title=decodeURIComponent(block.dataset.wikiTitle);
-   const page=pages.find(p=>p.title===title||data.query?.normalized?.some(n=>n.from===title&&n.to===p.title));
-   if(!page?.thumbnail?.source||!page?.fullurl){block.remove();continue;}
-   const img=document.createElement('img');img.src=page.thumbnail.source;img.alt=block.querySelector('figcaption').textContent;
-   img.loading='lazy';img.decoding='async';
-   const link=document.createElement('a');link.href=page.fullurl;link.target='_blank';link.rel='noopener noreferrer';link.title='查看景點照片來源';link.appendChild(img);
-   block.prepend(link);
-  }
- }catch(_){blocks.forEach(b=>b.remove());}
+ const blocks=[...document.querySelectorAll('[data-autumn]')];
+ const cache=new Map();
+ async function getPhoto(term){
+  if(cache.has(term))return cache.get(term);
+  const exact=/\.(jpg|jpeg|png)$/i.test(term);
+  const api=new URL('https://commons.wikimedia.org/w/api.php');
+  api.searchParams.set('action','query');api.searchParams.set('format','json');api.searchParams.set('origin','*');
+  api.searchParams.set('prop','imageinfo');api.searchParams.set('iiprop','url|mime');api.searchParams.set('iiurlwidth','700');
+  if(exact)api.searchParams.set('titles','File:'+term);
+  else {api.searchParams.set('generator','search');api.searchParams.set('gsrnamespace','6');api.searchParams.set('gsrlimit','12');api.searchParams.set('gsrsearch','filetype:bitmap '+term);}
+  try{
+   const response=await fetch(api.toString());if(!response.ok)throw Error('image unavailable');
+   const json=await response.json();
+   const pages=Object.values(json.query?.pages||{}).filter(p=>p.imageinfo?.[0]?.thumburl&&/image\/(jpeg|png|webp)/.test(p.imageinfo[0].mime||''));
+   const chosen=exact?pages[0]:pages.find(p=>/autumn|fall|foliage|maple|momiji|紅葉|秋/i.test(p.title)&&!/(illustration|drawing|painting|poster|map\b)/i.test(p.title));
+   const item=chosen?{src:chosen.imageinfo[0].thumburl,url:chosen.imageinfo[0].descriptionurl}:null;
+   cache.set(term,item);return item;
+  }catch(_){cache.set(term,null);return null;}
+ }
+ await Promise.all(blocks.map(async block=>{
+  const photo=await getPhoto(decodeURIComponent(block.dataset.autumn));
+  if(!photo){block.remove();return;}
+  const img=document.createElement('img');img.src=photo.src;img.alt=block.dataset.label+' 秋季景點照片';img.loading='lazy';img.decoding='async';
+  const link=document.createElement('a');link.href=photo.url;link.target='_blank';link.rel='noopener noreferrer';link.title='查看照片來源與授權';link.appendChild(img);block.prepend(link);
+ }));
 }
 function renderDays(){
  $('#days').innerHTML=days.map((d,i)=>`<article class="day"><header class="day-head"><span class="day-number">DAY 0${i+1}</span><div><h3>${d.date}（${d.weekday}）${d.city}</h3><p>${d.theme}</p></div></header><div class="timeline">${d.events.map((e,j)=>`<div class="event"><time>${esc(e[0])}</time><div><div class="event-title"><strong>${esc(e[1])}</strong><span class="badge ${statusClasses[e[2]]}">${statusNames[e[2]]}</span></div><p>${esc(e[3])}</p>${e[4]?(Array.isArray(e[4])?e[4]:[e[4]]).map(q=>maps(q)).join('　'):''}</div>${eventPhoto(e)}${costSlot(`${i}-${j}`)}</div>`).join('')}</div>${d.stay?`<div class="stay">住宿 · ${d.stay} <span class="badge confirmed">已確認</span> ${maps(d.hotel,'飯店導航')}${costSlot(`${i}-stay`)}</div>`:''}${d.note?`<div class="day-note">${esc(d.note)}</div>`:''}</article>`).join('');
